@@ -1,2 +1,11 @@
 @rpbiwer.bsky.social
 cv2j-lckh-7bgq-cleg
+https://bsky.social
+local-first-dev
+Local-First Software
+Discussions about local-first software development, offline-first apps, CRDTs, and data ownership
+
+
+n
+
+
