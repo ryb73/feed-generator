@@ -16,15 +16,13 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
       .filter((create) => {
         const isRelevant = isLocalFirstPost(create.record.text)
         if (isRelevant) {
-          console.log(`Found local-first post: ${create.record.text.slice(0, 100)}`)
+          console.log(`📱 Local-first post: ${create.record.text.slice(0, 100)}...`)
         }
         return isRelevant
       })
       .map((create) => ({
         uri: create.uri,
         cid: create.cid,
-        replyParent: create.record?.reply?.parent?.uri ?? null,
-        replyRoot: create.record?.reply?.root?.uri ?? null,
         indexedAt: new Date().toISOString(),
       }))
 
@@ -38,11 +36,15 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
     if (postsToCreate.length > 0) {
       await this.db
         .insertInto('post')
-        .values(postsToCreate)
+        .values(postsToCreate.map(post => ({
+          uri: post.uri,
+          cid: post.cid,
+          indexedAt: post.indexedAt,
+        })))
         .onConflict((oc) => oc.doNothing())
         .execute()
         
-      console.log(`Indexed ${postsToCreate.length} local-first posts`)
+      console.log(`💾 Indexed ${postsToCreate.length} local-first posts`)
     }
   }
 }
