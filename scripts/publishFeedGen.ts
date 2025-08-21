@@ -1,5 +1,4 @@
 import dotenv from 'dotenv'
-import inquirer from 'inquirer'
 import { AtpAgent, BlobRef, AppBskyFeedDefs } from '@atproto/api'
 import fs from 'fs/promises'
 import { ids } from '../src/lexicon/lexicons'
@@ -11,99 +10,75 @@ const run = async () => {
     throw new Error('Please provide a hostname in the .env file')
   }
 
-  const answers = await inquirer
-    .prompt([
-      {
-        type: 'input',
-        name: 'handle',
-        message: 'Enter your Bluesky handle:',
-        required: true,
-      },
-      {
-        type: 'password',
-        name: 'password',
-        message: 'Enter your Bluesky password (preferably an App Password):',
-      },
-      {
-        type: 'input',
-        name: 'service',
-        message: 'Optionally, enter a custom PDS service to sign in with:',
-        default: 'https://bsky.social',
-        required: false,
-      },
-      {
-        type: 'input',
-        name: 'recordName',
-        message: 'Enter a short name or the record. This will be shown in the feed\'s URL:',
-        required: true,
-      },
-      {
-        type: 'input',
-        name: 'displayName',
-        message: 'Enter a display name for your feed:',
-        required: true,
-      },
-      {
-        type: 'input',
-        name: 'description',
-        message: 'Optionally, enter a brief description of your feed:',
-        required: false,
-      },
-      {
-        type: 'input',
-        name: 'avatar',
-        message: 'Optionally, enter a local path to an avatar that will be used for the feed:',
-        required: false,
-      },
-      {
-        type: 'confirm',
-        name: 'videoOnly',
-        message: 'Is this a video-only feed? If so, do you want to set the content mode to video? This will allow for an "immersive" video experience within the app.',
-        default: false,
-      }
-    ])
+  // Get credentials from environment variables
+  const handle = process.env.BLUESKY_HANDLE
+  const password = process.env.BLUESKY_APP_PASSWORD
 
-  const { handle, password, recordName, displayName, description, avatar, service, videoOnly } = answers
+  if (!handle || !password) {
+    throw new Error('Please set BLUESKY_HANDLE and BLUESKY_APP_PASSWORD environment variables')
+  }
+
+  // Hardcoded feed configuration
+  const feedConfig = {
+    handle,
+    password,
+    service: 'https://bsky.social',
+    recordName: 'local-first-dev',
+    displayName: 'Local-First Software',
+    description: 'Discussions about local-first software development, offline-first apps, CRDTs, and data ownership',
+    avatar: '', // No avatar
+    videoOnly: false
+  }
+
+  console.log('🚀 Publishing Local-First Software feed...')
+  console.log(`📡 Handle: ${handle}`)
+  console.log(`📝 Record: ${feedConfig.recordName}`)
+  console.log(`🎯 Display: ${feedConfig.displayName}`)
 
   const feedGenDid =
     process.env.FEEDGEN_SERVICE_DID ?? `did:web:${process.env.FEEDGEN_HOSTNAME}`
 
-  // only update this if in a test environment
-  const agent = new AtpAgent({ service: service ? service : 'https://bsky.social' })
-  await agent.login({ identifier: handle, password})
+  // Create agent and login
+  const agent = new AtpAgent({ service: feedConfig.service })
+  await agent.login({ identifier: handle, password })
+
+  console.log('✅ Successfully logged in to Bluesky')
 
   let avatarRef: BlobRef | undefined
-  if (avatar) {
+  if (feedConfig.avatar) {
     let encoding: string
-    if (avatar.endsWith('png')) {
+    if (feedConfig.avatar.endsWith('png')) {
       encoding = 'image/png'
-    } else if (avatar.endsWith('jpg') || avatar.endsWith('jpeg')) {
+    } else if (feedConfig.avatar.endsWith('jpg') || feedConfig.avatar.endsWith('jpeg')) {
       encoding = 'image/jpeg'
     } else {
       throw new Error('expected png or jpeg')
     }
-    const img = await fs.readFile(avatar)
+    const img = await fs.readFile(feedConfig.avatar)
     const blobRes = await agent.api.com.atproto.repo.uploadBlob(img, {
       encoding,
     })
     avatarRef = blobRes.data.blob
   }
 
+  // Publish the feed
   await agent.api.com.atproto.repo.putRecord({
     repo: agent.session?.did ?? '',
     collection: ids.AppBskyFeedGenerator,
-    rkey: recordName,
+    rkey: feedConfig.recordName,
     record: {
       did: feedGenDid,
-      displayName: displayName,
-      description: description,
+      displayName: feedConfig.displayName,
+      description: feedConfig.description,
       avatar: avatarRef,
       createdAt: new Date().toISOString(),
-      contentMode: videoOnly ? AppBskyFeedDefs.CONTENTMODEVIDEO : AppBskyFeedDefs.CONTENTMODEUNSPECIFIED,
+      contentMode: feedConfig.videoOnly ? AppBskyFeedDefs.CONTENTMODEVIDEO : AppBskyFeedDefs.CONTENTMODEUNSPECIFIED,
     },
   })
 
-  console.log('All done 🎉')
+  console.log('🎉 Feed published successfully!')
+  console.log(`🔗 Feed URI: at://${agent.session?.did}/app.bsky.feed.generator/${feedConfig.recordName}`)
+  console.log(`🌐 Web URL: https://bsky.app/profile/${agent.session?.did}/feed/${feedConfig.recordName}`)
 }
 
-run()
+run().catch(console.error)
