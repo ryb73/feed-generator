@@ -26,29 +26,28 @@ export const handler = async (ctx: AppContext, params: QueryParams) => {
   }
 
   return {
-    encoding: 'application/json',
-    body: { cursor, feed },
+    cursor,
+    feed,
   }
 }
 
+// Keywords for local-first software
 const KEYWORDS = [
-  'local-first',
-  'localfirst', 
-  'local first',
-  'offline-first',
-  'offline first',
-  'data ownership',
-  'CRDT',
-  'conflict-free replicated',
-  'sync engine',
-  'SQLite browser',
-  'WebAssembly',
-  'WASM',
-  'electric sql',
-  'ditto',
-  'linear app',
-  'automerge',
-  'yjs'
+  'local-first', 'localfirst', 'local first',
+  'offline-first', 'offline first', 'offline app',
+  'data ownership', 'own your data',
+  'CRDT', 'conflict-free replicated',
+  'sync engine', 'data sync',
+  'SQLite browser', 'browser database',
+  'WebAssembly', 'WASM',
+  'electric sql', 'electricsql',
+  'ditto', 'ink & switch',
+  'actual budget', 'linear app',
+  'automerge', 'yjs', 'replicache',
+  'martin kleppmann', 'adam wiggins',
+  'collaborative editing',
+  'peer to peer', 'p2p app',
+  'distributed systems'
 ]
 
 export function isLocalFirstPost(text: string): boolean {
