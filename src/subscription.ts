@@ -9,6 +9,7 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
 async handleEvent(evt: RepoEvent) {
 if (!isCommit(evt)) return
 
+```
 const ops = await getOpsByType(evt)
 
 const postsToDelete = ops.posts.deletes.map((del) => del.uri)
@@ -16,7 +17,7 @@ const postsToCreate = ops.posts.creates
   .filter((create) => {
     const isRelevant = isLocalFirstPost(create.record.text)
     if (isRelevant) {
-      console.log(`📱 Local-first post: ${create.record.text.slice(0, 100)}...`)
+      console.log(`Found local-first post: ${create.record.text.slice(0, 100)}`)
     }
     return isRelevant
   })
@@ -42,8 +43,9 @@ if (postsToCreate.length > 0) {
     .onConflict((oc) => oc.doNothing())
     .execute()
     
-  console.log(`💾 Indexed ${postsToCreate.length} local-first posts`)
+  console.log(`Indexed ${postsToCreate.length} local-first posts`)
 }
+```
 
 }
 }
